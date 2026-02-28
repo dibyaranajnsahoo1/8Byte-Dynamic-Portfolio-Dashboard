@@ -20,8 +20,8 @@ app.set("trust proxy", 1)
 const yahooFinance = new YahooFinance()
 
 const cache = new NodeCache({
-  stdTTL: 15,     // cache 15 sec
-  checkperiod: 20
+  stdTTL: 20,
+  checkperiod: 25
 })
 
 app.get("/", (req, res) => {
@@ -30,6 +30,7 @@ app.get("/", (req, res) => {
 
 app.get("/api/portfolio", async (req, res) => {
   try {
+
     if (!Array.isArray(portfolio)) {
       return res.status(500).json({
         error: "Invalid portfolio format"
@@ -45,40 +46,59 @@ app.get("/api/portfolio", async (req, res) => {
 
           if (!cachedData) {
             try {
-              const quote = await yahooFinance.quote(stock.symbol)
 
-              if (!quote || Object.keys(quote).length === 0) {
-                throw new Error("Empty Yahoo response")
+              
+              const quote = await yahooFinance.quoteSummary(
+                stock.symbol,
+                {
+                  modules: [
+                    "price",
+                    "summaryDetail",
+                    "defaultKeyStatistics"
+                  ]
+                }
+              )
+
+              if (!quote || !quote.price) {
+                throw new Error("Invalid Yahoo response")
               }
 
-              // 🔥 Smart price fallback
               const price =
-                quote.regularMarketPrice ??
-                quote.regularMarketPreviousClose ??
-                quote.previousClose ??
+                quote.price.regularMarketPrice ??
+                quote.price.regularMarketPreviousClose ??
                 0
+
+              const pe =
+                quote.summaryDetail?.trailingPE ??
+                "N/A"
+
+              const eps =
+                quote.defaultKeyStatistics?.trailingEps ??
+                "N/A"
 
               cachedData = {
                 cmp: price ? Number(price.toFixed(2)) : 0,
-
                 peRatio:
-                  quote.trailingPE != null
-                    ? Number(quote.trailingPE.toFixed(2))
+                  pe !== "N/A"
+                    ? Number(pe.toFixed(2))
                     : "N/A",
-
                 earnings:
-                  quote.epsTrailingTwelveMonths != null
-                    ? "₹" + Number(quote.epsTrailingTwelveMonths.toFixed(2))
+                  eps !== "N/A"
+                    ? "₹" + Number(eps.toFixed(2))
                     : "N/A"
               }
 
-              // ✅ Cache only if valid price exists
+
               if (price) {
                 cache.set(stock.symbol, cachedData)
               }
 
             } catch (err) {
-              console.error("Yahoo fetch error:", stock.symbol, err.message)
+              console.error(
+                "Yahoo fetch error:",
+                stock.symbol,
+                err.message
+              )
 
               cachedData = {
                 cmp: 0,
@@ -115,6 +135,7 @@ app.get("/api/portfolio", async (req, res) => {
             peRatio: cachedData.peRatio,
             earnings: cachedData.earnings
           }
+
         })
     )
 
