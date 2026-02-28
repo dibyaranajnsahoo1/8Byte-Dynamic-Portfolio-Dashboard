@@ -17,7 +17,18 @@ app.use(
 app.use(express.json())
 app.set("trust proxy", 1)
 
-const yahooFinance = new YahooFinance()
+const yahooFinance = new YahooFinance({
+  requestOptions: {
+    timeout: 10000,
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
+      "Accept": "application/json",
+    },
+  },
+})
+
+console.log("Quote response:", quote)
 
 const cache = new NodeCache({
   stdTTL: 20,
