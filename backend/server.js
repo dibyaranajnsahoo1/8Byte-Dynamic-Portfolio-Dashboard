@@ -20,7 +20,7 @@ app.set("trust proxy", 1)
 const yahooFinance = new YahooFinance()
 
 const cache = new NodeCache({
-  stdTTL: 15,
+  stdTTL: 15,     // cache 15 sec
   checkperiod: 20
 })
 
@@ -47,26 +47,38 @@ app.get("/api/portfolio", async (req, res) => {
             try {
               const quote = await yahooFinance.quote(stock.symbol)
 
-              if (!quote) throw new Error("Invalid Yahoo response")
-
-              cachedData = {
-                cmp: quote.regularMarketPrice
-                  ? Number(quote.regularMarketPrice.toFixed(2))
-                  : 0,
-
-                peRatio: quote.trailingPE
-                  ? Number(quote.trailingPE.toFixed(2))
-                  : "N/A",
-
-                earnings: quote.epsTrailingTwelveMonths
-                  ? "₹" + Number(quote.epsTrailingTwelveMonths.toFixed(2))
-                  : "N/A"
+              if (!quote || Object.keys(quote).length === 0) {
+                throw new Error("Empty Yahoo response")
               }
 
-              cache.set(stock.symbol, cachedData)
+              // 🔥 Smart price fallback
+              const price =
+                quote.regularMarketPrice ??
+                quote.regularMarketPreviousClose ??
+                quote.previousClose ??
+                0
+
+              cachedData = {
+                cmp: price ? Number(price.toFixed(2)) : 0,
+
+                peRatio:
+                  quote.trailingPE != null
+                    ? Number(quote.trailingPE.toFixed(2))
+                    : "N/A",
+
+                earnings:
+                  quote.epsTrailingTwelveMonths != null
+                    ? "₹" + Number(quote.epsTrailingTwelveMonths.toFixed(2))
+                    : "N/A"
+              }
+
+              // ✅ Cache only if valid price exists
+              if (price) {
+                cache.set(stock.symbol, cachedData)
+              }
 
             } catch (err) {
-              console.error("Yahoo fetch error:", stock.symbol, err)
+              console.error("Yahoo fetch error:", stock.symbol, err.message)
 
               cachedData = {
                 cmp: 0,
@@ -109,9 +121,10 @@ app.get("/api/portfolio", async (req, res) => {
     res.json(result)
 
   } catch (error) {
-    console.error("Server Error:", error)
+    console.error("Server Error:", error.message)
+
     res.status(500).json({
-      error: error.message
+      error: "Internal Server Error"
     })
   }
 })
