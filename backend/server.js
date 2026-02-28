@@ -20,7 +20,7 @@ app.set("trust proxy", 1)
 const yahooFinance = new YahooFinance()
 
 const cache = new NodeCache({
-  stdTTL: 15,    
+  stdTTL: 15,     // cache 15 sec
   checkperiod: 20
 })
 
@@ -51,6 +51,7 @@ app.get("/api/portfolio", async (req, res) => {
                 throw new Error("Empty Yahoo response")
               }
 
+              // 🔥 Smart price fallback
               const price =
                 quote.regularMarketPrice ??
                 quote.regularMarketPreviousClose ??
@@ -71,6 +72,7 @@ app.get("/api/portfolio", async (req, res) => {
                     : "N/A"
               }
 
+              // ✅ Cache only if valid price exists
               if (price) {
                 cache.set(stock.symbol, cachedData)
               }
