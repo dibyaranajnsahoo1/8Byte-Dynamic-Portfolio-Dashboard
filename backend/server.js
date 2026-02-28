@@ -101,18 +101,16 @@ app.get("/api/portfolio", async (req, res) => {
               }
 
             } catch (err) {
-              console.error(
-                "Yahoo fetch error:",
-                stock.symbol,
-                err.message
-              )
+  console.error("Yahoo fetch error FULL:", err);
+  console.error("Error message:", err.message);
+  console.error("Error response:", err.response?.data);
 
-              cachedData = {
-                cmp: 0,
-                peRatio: "N/A",
-                earnings: "N/A"
-              }
-            }
+  cachedData = {
+    cmp: 0,
+    peRatio: "N/A",
+    earnings: "N/A"
+  };
+}
           }
 
           const investment = Number(
