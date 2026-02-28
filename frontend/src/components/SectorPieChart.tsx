@@ -78,8 +78,8 @@ export default function SectorPieChart({ data }: { data: Stock[] }) {
           </Pie>
 
           <Tooltip
-            formatter={(value: number) =>
-              `₹${Number(value || 0).toLocaleString()}`
+            formatter={(value: number | undefined) =>
+              `₹${Number(value || 0).toLocaleString("en-IN")}`
             }
           />
         </PieChart>

@@ -53,9 +53,9 @@ export default function SectorBarChart({ data }: { data: Stock[] }) {
           <XAxis dataKey="sector" />
           <YAxis />
           <Tooltip
-            formatter={(value: number) =>
-              `₹${Number(value || 0).toLocaleString()}`
-            }
+            formatter={(value: number | undefined) =>
+  `₹${Number(value || 0).toLocaleString("en-IN")}`
+}
           />
           <Bar
             dataKey="gain"

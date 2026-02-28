@@ -1,5 +1,9 @@
 export interface Stock {
   symbol: string
+  particulars: string
+  sector: string
+  exchange: string
+
   purchasePrice: number
   quantity: number
 
@@ -9,6 +13,7 @@ export interface Stock {
   gainLoss: number
   gainLossPercent: number
   isProfit: boolean
+
   peRatio: number | string
   earnings: string
 }

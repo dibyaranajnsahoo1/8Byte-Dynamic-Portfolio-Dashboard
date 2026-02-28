@@ -6,13 +6,26 @@ const NodeCache = require("node-cache")
 const portfolio = require("./data/portfolio.json")
 
 const app = express()
-app.use(cors())
+
+app.use(
+  cors({
+    origin: process.env.CLIENT_URL || "*",
+    methods: ["GET"],
+  })
+)
+
 app.use(express.json())
+app.set("trust proxy", 1)
 
 const yahooFinance = new YahooFinance()
+
 const cache = new NodeCache({
   stdTTL: 15,
   checkperiod: 20
+})
+
+app.get("/", (req, res) => {
+  res.send("Portfolio API Running 🚀")
 })
 
 app.get("/api/portfolio", async (req, res) => {
@@ -53,11 +66,7 @@ app.get("/api/portfolio", async (req, res) => {
               cache.set(stock.symbol, cachedData)
 
             } catch (err) {
-              console.error(
-                "Yahoo fetch error:",
-                stock.symbol,
-                err.message
-              )
+              console.error("Yahoo fetch error:", stock.symbol, err)
 
               cachedData = {
                 cmp: 0,
@@ -100,7 +109,7 @@ app.get("/api/portfolio", async (req, res) => {
     res.json(result)
 
   } catch (error) {
-    console.error("Server Error:", error.message)
+    console.error("Server Error:", error)
     res.status(500).json({
       error: error.message
     })
@@ -110,5 +119,5 @@ app.get("/api/portfolio", async (req, res) => {
 const PORT = process.env.PORT || 5000
 
 app.listen(PORT, () =>
-  console.log(`🚀 Server running at http://localhost:${PORT}`)
+  console.log(`🚀 Server running on port ${PORT}`)
 )
