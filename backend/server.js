@@ -17,22 +17,29 @@ app.use(
 app.use(express.json())
 app.set("trust proxy", 1)
 
-const yahooFinance = new YahooFinance({
-  requestOptions: {
-    timeout: 10000,
+
+
+const originalFetch = global.fetch
+
+global.fetch = async (url, options = {}) => {
+  return originalFetch(url, {
+    ...options,
     headers: {
+      ...options.headers,
       "User-Agent":
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
       "Accept": "application/json",
     },
-  },
-})
+  })
+}
 
-console.log("Quote response:", quote)
+const yahooFinance = new YahooFinance()
+
+
 
 const cache = new NodeCache({
   stdTTL: 20,
-  checkperiod: 25
+  checkperiod: 25,
 })
 
 app.get("/", (req, res) => {
@@ -41,32 +48,28 @@ app.get("/", (req, res) => {
 
 app.get("/api/portfolio", async (req, res) => {
   try {
-
     if (!Array.isArray(portfolio)) {
       return res.status(500).json({
-        error: "Invalid portfolio format"
+        error: "Invalid portfolio format",
       })
     }
 
     const result = await Promise.all(
       portfolio
-        .filter(stock => stock && stock.symbol)
+        .filter((stock) => stock && stock.symbol)
         .map(async (stock) => {
-
           let cachedData = cache.get(stock.symbol)
 
           if (!cachedData) {
             try {
-
-              
               const quote = await yahooFinance.quoteSummary(
                 stock.symbol,
                 {
                   modules: [
                     "price",
                     "summaryDetail",
-                    "defaultKeyStatistics"
-                  ]
+                    "defaultKeyStatistics",
+                  ],
                 }
               )
 
@@ -80,8 +83,7 @@ app.get("/api/portfolio", async (req, res) => {
                 0
 
               const pe =
-                quote.summaryDetail?.trailingPE ??
-                "N/A"
+                quote.summaryDetail?.trailingPE ?? "N/A"
 
               const eps =
                 quote.defaultKeyStatistics?.trailingEps ??
@@ -96,14 +98,12 @@ app.get("/api/portfolio", async (req, res) => {
                 earnings:
                   eps !== "N/A"
                     ? "₹" + Number(eps.toFixed(2))
-                    : "N/A"
+                    : "N/A",
               }
-
 
               if (price) {
                 cache.set(stock.symbol, cachedData)
               }
-
             } catch (err) {
               console.error(
                 "Yahoo fetch error:",
@@ -114,7 +114,7 @@ app.get("/api/portfolio", async (req, res) => {
               cachedData = {
                 cmp: 0,
                 peRatio: "N/A",
-                earnings: "N/A"
+                earnings: "N/A",
               }
             }
           }
@@ -132,7 +132,9 @@ app.get("/api/portfolio", async (req, res) => {
           )
 
           const gainLossPercent = investment
-            ? Number(((gainLoss / investment) * 100).toFixed(2))
+            ? Number(
+                ((gainLoss / investment) * 100).toFixed(2)
+              )
             : 0
 
           return {
@@ -144,19 +146,17 @@ app.get("/api/portfolio", async (req, res) => {
             gainLossPercent,
             isProfit: gainLoss >= 0,
             peRatio: cachedData.peRatio,
-            earnings: cachedData.earnings
+            earnings: cachedData.earnings,
           }
-
         })
     )
 
     res.json(result)
-
   } catch (error) {
     console.error("Server Error:", error.message)
 
     res.status(500).json({
-      error: "Internal Server Error"
+      error: "Internal Server Error",
     })
   }
 })
