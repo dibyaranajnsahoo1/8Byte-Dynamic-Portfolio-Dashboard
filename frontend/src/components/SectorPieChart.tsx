@@ -27,20 +27,31 @@ export default function SectorPieChart({
 }: {
   sectorSummary: SectorSummary
 }) {
-  const chartData = Object.entries(
-    sectorSummary || {}
-  ).map(([sector, values]) => ({
-    sector,
-    value: values.totalInvestment,
-  }))
+  const chartData = Object.entries(sectorSummary || {}).map(
+    ([sector, values]) => ({
+      sector,
+      value: values.totalInvestment,
+    })
+  )
 
   const totalInvestment = chartData.reduce(
     (sum, d) => sum + d.value,
     0
   )
 
+
+  if (!chartData.length) {
+    return (
+      <div className="bg-gradient-to-br from-white to-gray-100 rounded-3xl shadow-xl p-6 h-[400px] flex items-center justify-center">
+        <p className="text-gray-500 text-lg font-medium">
+          No sector data available
+        </p>
+      </div>
+    )
+  }
+
   return (
-    <div className="bg-gradient-to-br from-white to-gray-100 rounded-3xl shadow-xl p-6 h-[400px] relative hover:shadow-2xl transition">
+    <div className="bg-gradient-to-br from-white to-gray-100 rounded-3xl shadow-xl p-6 h-[400px] relative hover:shadow-2xl transition-all duration-300">
       <h3 className="font-semibold mb-4 text-xl text-gray-700">
         Sector Allocation
       </h3>
@@ -51,13 +62,13 @@ export default function SectorPieChart({
             data={chartData}
             dataKey="value"
             nameKey="sector"
-            innerRadius={70}
-            outerRadius={130}
+            innerRadius={80}
+            outerRadius={120}
             paddingAngle={4}
-            label={({ name, percent }) =>
-              `${name} (${(percent * 100).toFixed(
-                0
-              )}%)`
+            label={({ payload, percent }) =>
+              `${payload?.sector} (${(
+                (percent || 0) * 100
+              ).toFixed(0)}%)`
             }
             labelLine={false}
           >
@@ -65,8 +76,7 @@ export default function SectorPieChart({
               <Cell
                 key={index}
                 fill={
-                  COLORS[index %
-                    COLORS.length]
+                  COLORS[index % COLORS.length]
                 }
               />
             ))}
@@ -83,7 +93,7 @@ export default function SectorPieChart({
       </ResponsiveContainer>
 
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div className="text-center mt-10">
+        <div className="text-center">
           <p className="text-gray-500 text-sm">
             Total Investment
           </p>
