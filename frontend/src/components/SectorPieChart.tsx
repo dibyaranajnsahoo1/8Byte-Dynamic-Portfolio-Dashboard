@@ -3,55 +3,44 @@ import {
   Pie,
   Tooltip,
   ResponsiveContainer,
-  Cell
+  Cell,
 } from "recharts"
-import type { Stock } from "../types/stock"
 
 const COLORS = [
   "#6366f1",
   "#22c55e",
   "#f59e0b",
   "#ef4444",
-  "#14b8a6"
+  "#14b8a6",
 ]
 
-export default function SectorPieChart({ data }: { data: Stock[] }) {
+interface SectorSummary {
+  [key: string]: {
+    totalInvestment: number
+    totalPresentValue: number
+    totalGainLoss: number
+  }
+}
 
-  const safeData: Stock[] = Array.isArray(data) ? data : []
-
-  const grouped = safeData.reduce<Record<string, number>>(
-    (acc, stock) => {
-      const sectorName = stock.sector || "Unknown"
-      acc[sectorName] =
-        (acc[sectorName] || 0) + (stock.investment || 0)
-      return acc
-    },
-    {}
-  )
-
-  const chartData = Object.keys(grouped).map((sector) => ({
+export default function SectorPieChart({
+  sectorSummary,
+}: {
+  sectorSummary: SectorSummary
+}) {
+  const chartData = Object.entries(
+    sectorSummary || {}
+  ).map(([sector, values]) => ({
     sector,
-    value: grouped[sector]
+    value: values.totalInvestment,
   }))
 
   const totalInvestment = chartData.reduce(
-    (sum, d) => sum + (d.value || 0),
+    (sum, d) => sum + d.value,
     0
   )
 
-  const renderLabel = ({
-    name,
-    percent,
-    value
-  }: any) => {
-    return `${name}: ₹${Number(value || 0).toLocaleString()} (${(
-      (percent || 0) * 100
-    ).toFixed(0)}%)`
-  }
-
   return (
     <div className="bg-gradient-to-br from-white to-gray-100 rounded-3xl shadow-xl p-6 h-[400px] relative hover:shadow-2xl transition">
-
       <h3 className="font-semibold mb-4 text-xl text-gray-700">
         Sector Allocation
       </h3>
@@ -65,21 +54,29 @@ export default function SectorPieChart({ data }: { data: Stock[] }) {
             innerRadius={70}
             outerRadius={130}
             paddingAngle={4}
-            label={renderLabel}
+            label={({ name, percent }) =>
+              `${name} (${(percent * 100).toFixed(
+                0
+              )}%)`
+            }
             labelLine={false}
-            animationDuration={1000}
           >
             {chartData.map((_, index) => (
               <Cell
                 key={index}
-                fill={COLORS[index % COLORS.length]}
+                fill={
+                  COLORS[index %
+                    COLORS.length]
+                }
               />
             ))}
           </Pie>
 
           <Tooltip
             formatter={(value: number | undefined) =>
-              `₹${Number(value || 0).toLocaleString("en-IN")}`
+              `₹${Number(value || 0).toLocaleString(
+                "en-IN"
+              )}`
             }
           />
         </PieChart>
@@ -91,11 +88,12 @@ export default function SectorPieChart({ data }: { data: Stock[] }) {
             Total Investment
           </p>
           <p className="font-bold text-lg text-indigo-600">
-            ₹{Number(totalInvestment || 0).toLocaleString()}
+            ₹{totalInvestment.toLocaleString(
+              "en-IN"
+            )}
           </p>
         </div>
       </div>
-
     </div>
   )
 }

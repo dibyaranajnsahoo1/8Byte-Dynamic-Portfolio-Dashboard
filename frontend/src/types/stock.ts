@@ -1,8 +1,10 @@
 export interface Stock {
+  id?: number
+
   symbol: string
   particulars: string
   sector: string
-  exchange: string
+  tradingCode: string
 
   purchasePrice: number
   quantity: number
@@ -12,6 +14,7 @@ export interface Stock {
   presentValue: number
   gainLoss: number
   gainLossPercent: number
+  portfolioPercent: number   // 🔥 ADD THIS
   isProfit: boolean
 
   peRatio: number | string

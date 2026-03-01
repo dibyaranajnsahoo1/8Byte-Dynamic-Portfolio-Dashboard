@@ -5,44 +5,32 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  CartesianGrid
+  CartesianGrid,
+  Cell,
 } from "recharts"
-import type { Stock } from "../types/stock"
 
-export default function SectorBarChart({ data }: { data: Stock[] }) {
+interface SectorSummary {
+  [key: string]: {
+    totalInvestment: number
+    totalPresentValue: number
+    totalGainLoss: number
+  }
+}
 
-  const safeData: Stock[] = Array.isArray(data) ? data : []
-
-  const grouped = safeData.reduce<Record<string, {
-    investment: number
-    present: number
-  }>>((acc, stock) => {
-
-    const sectorName = stock.sector || "Unknown"
-
-    if (!acc[sectorName]) {
-      acc[sectorName] = {
-        investment: 0,
-        present: 0
-      }
-    }
-
-    acc[sectorName].investment += stock.investment || 0
-    acc[sectorName].present += stock.presentValue || 0
-
-    return acc
-  }, {})
-
-  const chartData = Object.keys(grouped).map((sector) => ({
+export default function SectorBarChart({
+  sectorSummary,
+}: {
+  sectorSummary: SectorSummary
+}) {
+  const chartData = Object.entries(
+    sectorSummary || {}
+  ).map(([sector, values]) => ({
     sector,
-    gain:
-      (grouped[sector].present || 0) -
-      (grouped[sector].investment || 0)
+    gain: values.totalGainLoss,
   }))
 
   return (
-    <div className="bg-gradient-to-br from-white to-gray-100 rounded-3xl shadow-xl p-6 h-[400px] transition hover:shadow-2xl">
-
+    <div className="bg-gradient-to-br from-white to-gray-100 rounded-3xl shadow-xl p-6 h-[400px] hover:shadow-2xl transition">
       <h3 className="font-semibold mb-4 text-xl text-gray-700">
         Sector Gain / Loss
       </h3>
@@ -54,14 +42,21 @@ export default function SectorBarChart({ data }: { data: Stock[] }) {
           <YAxis />
           <Tooltip
             formatter={(value: number | undefined) =>
-  `₹${Number(value || 0).toLocaleString("en-IN")}`
-}
+              `₹${Number(value || 0).toLocaleString("en-IN")}`
+            }
           />
-          <Bar
-            dataKey="gain"
-            fill="#6366f1"
-            radius={[8, 8, 0, 0]}
-          />
+          <Bar dataKey="gain" radius={[8, 8, 0, 0]}>
+            {chartData.map((entry, index) => (
+              <Cell
+                key={index}
+                fill={
+                  entry.gain >= 0
+                    ? "#22c55e"
+                    : "#ef4444"
+                }
+              />
+            ))}
+          </Bar>
         </BarChart>
       </ResponsiveContainer>
     </div>
